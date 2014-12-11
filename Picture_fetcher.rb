@@ -18,7 +18,7 @@ module PictureFetcher
 			puts "Target directory for images: #{@images_target_dir}"
 			puts "Target directory for movies: #{@movies_target_dir}"
 
-			images = Dir.glob("#{@source_dir}/**/*").select{|f| f.end_with?(".JPG")}.sort{ |x, y| x <=> y }
+			images = Dir.glob("#{@source_dir}/**/*").select{|f| f.end_with?(".JPG") || f.end_with?(".NEF")}.sort{ |x, y| x <=> y }
 			movies = Dir.glob("#{@source_dir}/**/*").select{|f| f.end_with?(".MOV")}.sort{ |x, y| x <=> y }
 
 			puts "Found #{images.length} images and #{movies.length} movies"
