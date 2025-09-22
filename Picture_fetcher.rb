@@ -5,10 +5,11 @@ module PictureFetcher
 
 	class Fetcher
 
-		def initialize source_dir, images_target_dir, movies_target_dir
+		def initialize source_dir, images_target_dir, movies_target_dir, mode
 			@source_dir = source_dir
 			@images_target_dir = images_target_dir
 			@movies_target_dir = movies_target_dir
+			@mode = mode
 			@number_of_digits = 4
 		end
 
@@ -18,8 +19,8 @@ module PictureFetcher
 			puts "Target directory for images: #{@images_target_dir}"
 			puts "Target directory for movies: #{@movies_target_dir}"
 
-			images = Dir.glob("#{@source_dir}/**/*").select{|f| f.end_with?(".JPG") || f.end_with?(".NEF")}.sort{ |x, y| x <=> y }
-			movies = Dir.glob("#{@source_dir}/**/*").select{|f| f.end_with?(".MOV")}.sort{ |x, y| x <=> y }
+			images = Dir.glob("#{@source_dir}/**/*").select{|f| f.downcase.end_with?(".png") || f.downcase.end_with?(".jpeg") || f.downcase.end_with?(".jpg") || f.downcase.end_with?(".nef")}.sort{ |x, y| x <=> y }
+			movies = Dir.glob("#{@source_dir}/**/*").select{|f| f.downcase.end_with?(".mov") || f.downcase.end_with?(".mp4") || f.downcase.end_with?(".avi")}.sort{ |x, y| x <=> y }
 
 			puts "Found #{images.length} images and #{movies.length} movies"
 
@@ -70,13 +71,16 @@ module PictureFetcher
 
 		def copy_files(files, target_dir)
 			files.each do |file|
-				cdate = File.ctime(file)
-				year = cdate.year
-				month = cdate.month
-				day = cdate.day
-				target_file = create_directories_and_return_file_name(target_dir, File.basename(file), cdate)
-				puts "Copying #{file} to #{target_file}"
-				FileUtils.copy(file, target_file)
+				date = File.ctime(file)
+				if @mode == "M"
+					date = File.mtime(file)
+				end
+				year = date.year
+				month = date.month
+				day = date.day
+				target_file = create_directories_and_return_file_name(target_dir, File.basename(file), date)
+				puts "Moving #{file} to #{target_file}"
+				FileUtils.mv(file, target_file)
 			end
 		end
 
@@ -84,12 +88,23 @@ module PictureFetcher
 
 end
 
-source_dir = "f:/"
-target_dir_images = "d:/pictures"
-target_dir_movies = "d:/movies"
+source_dir = "k:/"
+
+if ARGV.length > 0
+	source_dir = ARGV[0].gsub(/\\/,"/")
+end
+
+if ARGV.length > 1
+	mode = ARGV[1]
+end
+
+puts source_dir
+
+target_dir_images = "d:/clouds/OneDrive/zdjecia/chronologicznie"
+target_dir_movies = "d:/clouds/OneDrive/zdjecia/filmy - chronologicznie"
 
 Dir.mkdir(target_dir_images) if !Dir.exist?(target_dir_images)
 Dir.mkdir(target_dir_movies) if !Dir.exist?(target_dir_movies)
 
-fetcher = PictureFetcher::Fetcher.new source_dir, target_dir_images, target_dir_movies
+fetcher = PictureFetcher::Fetcher.new source_dir, target_dir_images, target_dir_movies, mode
 fetcher.fetch
