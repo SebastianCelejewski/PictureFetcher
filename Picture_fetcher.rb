@@ -24,9 +24,13 @@ module PictureFetcher
 
 			puts "Found #{images.length} images and #{movies.length} movies"
 
-			copy_files images, @images_target_dir
-			copy_files movies, @movies_target_dir
+			files_to_delete = []
 
+			files_to_delete += copy_files images, @images_target_dir
+			files_to_delete += copy_files movies, @movies_target_dir
+
+			delete_files(files_to_delete)
+			
 			puts "Done."
 		end
 
@@ -70,6 +74,7 @@ module PictureFetcher
 		end
 
 		def copy_files(files, target_dir)
+			files_to_delete = []
 			files.each do |file|
 				date = File.ctime(file)
 				if @mode == "M"
@@ -79,13 +84,20 @@ module PictureFetcher
 				month = date.month
 				day = date.day
 				target_file = create_directories_and_return_file_name(target_dir, File.basename(file), date)
-				puts "Moving #{file} to #{target_file}"
-				FileUtils.mv(file, target_file)
+				puts "Copying #{file} to #{target_file}"
+				FileUtils.cp(file, target_file)
+				files_to_delete << file
 			end
+			return files_to_delete
 		end
 
+		def delete_files(files)
+			files.each do |file|
+				puts "Deleting file #{file}"
+				File.delete(file)
+			end
+		end
 	end
-
 end
 
 source_dir = "k:/"
@@ -100,8 +112,8 @@ end
 
 puts source_dir
 
-target_dir_images = "d:/clouds/OneDrive/zdjecia/chronologicznie"
-target_dir_movies = "d:/clouds/OneDrive/zdjecia/filmy - chronologicznie"
+target_dir_images = "d:/clouds/OneDrive/import/zdjecia/"
+target_dir_movies = "d:/clouds/OneDrive/import/filmy/"
 
 Dir.mkdir(target_dir_images) if !Dir.exist?(target_dir_images)
 Dir.mkdir(target_dir_movies) if !Dir.exist?(target_dir_movies)
