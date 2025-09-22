@@ -43,7 +43,7 @@ module PictureFetcher
 			return index + 1
 		end
 
-		def create_directories_and_return_file_name(target_dir, file_name, date)
+		def create_directories_and_return_file_name(target_dir, original_file_name, date)
 			year = sprintf("%4d", date.year)
 			month = sprintf("%02d", date.mon)
 			day = sprintf("%02d", date.mday)
@@ -66,27 +66,40 @@ module PictureFetcher
 			end
 
 			file_prefix = "#{year}-#{month}-#{day} "
-			file_extension = File.extname(file_name).downcase
+			file_extension = File.extname(original_file_name).downcase
+			original_file_name_infix = File.basename(original_file_name, ".*")
 			index = calculate_image_index(day_dir, file_prefix)
 			index_str = sprintf("%0#{@number_of_digits}d", index)
-			file_name = "#{day_dir}/#{year}-#{month}-#{day} #{index_str}#{file_extension}"
+			file_name = "#{day_dir}/#{year}-#{month}-#{day} #{index_str} (#{original_file_name_infix})#{file_extension}"
 			return file_name
 		end
 
 		def copy_files(files, target_dir)
 			files_to_delete = []
 			files.each do |file|
-				date = File.ctime(file)
-				if @mode == "M"
-					date = File.mtime(file)
+				attempt = 0
+				success = false
+
+				while attempt <= 3 && success == false do
+					attempt += 1
+					begin
+						date = File.ctime(file)
+						if @mode == "M"
+							date = File.mtime(file)
+						end
+						year = date.year
+						month = date.month
+						day = date.day
+						target_file = create_directories_and_return_file_name(target_dir, File.basename(file), date)
+						puts "Copying #{file} to #{target_file} (attempt #{attempt})"
+						FileUtils.cp(file, target_file)
+						files_to_delete << file
+						success = true
+					rescue Exception => ex
+						puts "Failed to copy #{file} to #{target_file}: {ex}"
+						success = false
+					end
 				end
-				year = date.year
-				month = date.month
-				day = date.day
-				target_file = create_directories_and_return_file_name(target_dir, File.basename(file), date)
-				puts "Copying #{file} to #{target_file}"
-				FileUtils.cp(file, target_file)
-				files_to_delete << file
 			end
 			return files_to_delete
 		end
